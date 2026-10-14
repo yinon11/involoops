@@ -62,7 +62,7 @@ import {
   getShaamConfig,
   getShaamInvoicePath,
 } from "@/lib/shaam/client";
-import { getShaamProxyHostPort } from "@/lib/shaam/proxy";
+import { getShaamProxyHostPort, isShaamProxyEnabled } from "@/lib/shaam/proxy";
 
 function loadEnvFile() {
   for (const candidate of [".env", ".env.sandbox", ".env.local"]) {
@@ -109,6 +109,10 @@ interface ProbeResult {
 }
 
 function getProxyAgent(): ProxyAgent | null {
+  // Mirrors runtime: SHAAM_PROXY_ENABLED=0 means the app ignores the
+  // configured proxy, so the probes must too — otherwise this script
+  // verifies a path production no longer takes.
+  if (!isShaamProxyEnabled()) return null;
   const url = process.env.SHAAM_PROXY_URL?.trim();
   if (!url) return null;
   return new ProxyAgent(url);
@@ -208,12 +212,16 @@ async function main() {
     client_id_present: Boolean(cfg.clientId),
     client_secret_present: Boolean(cfg.clientSecret),
     proxy: proxy ?? null,
+    proxy_enabled: isShaamProxyEnabled(),
+    proxy_url_configured: Boolean(process.env.SHAAM_PROXY_URL?.trim()),
   });
 
   if (!proxy) {
     shaamWarn(
       "preflight",
-      "SHAAM_PROXY_URL is not set — proxy probes will run direct.",
+      isShaamProxyEnabled()
+        ? "SHAAM_PROXY_URL is not set — proxy probes will run direct."
+        : "SHAAM_PROXY_ENABLED is off — the configured proxy is ignored and proxy probes will run direct.",
     );
   }
 

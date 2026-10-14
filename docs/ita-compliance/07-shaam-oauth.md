@@ -58,6 +58,10 @@ See `.env.example` for the full list.
   in IL, or another IL-terminated VPN). In that case the proxy adds
   only latency and can **break** OAuth if the proxy's own egress is not
   in a range ITA accepts.
+- **`SHAAM_PROXY_ENABLED=0`** goes direct while leaving the URL in place
+  — for when ITA allowlists the app server's own address and the proxy
+  is kept only as a fallback. Unset means enabled; flip it back to `1`
+  (plus a container restart) to re-tunnel.
 - OAuth authorize is **browser → ITA**; token exchange is **server →
   ITA** (optionally via proxy). A working SMS authorize step does not
   validate the proxy path — use `npx tsx scripts/verify-shaam-proxy.ts`

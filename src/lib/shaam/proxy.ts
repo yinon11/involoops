@@ -10,6 +10,11 @@
  * ranges and how to check a new address are in
  * docs/ita-compliance/11-israel-egress.md.
  *
+ * `SHAAM_PROXY_ENABLED=0` turns the tunnel off without clearing
+ * `SHAAM_PROXY_URL` — for when ITA allowlists the app server's own
+ * address and the proxy becomes a detour we keep configured as a
+ * fallback. Unset means enabled, so existing deployments are unchanged.
+ *
  * Implementation note: we import undici's `fetch` directly rather
  * than calling the global one. Next.js patches `globalThis.fetch`
  * for its caching layer, and that wrapper silently drops undici-
@@ -28,12 +33,36 @@ let cachedUndici: UndiciModule | null = null;
 let cachedAgent: InstanceType<UndiciModule["ProxyAgent"]> | null = null;
 let cachedAgentUrl: string | null = null;
 
-function getProxyUrl(): string | null {
+/** Values that read as "off" for `SHAAM_PROXY_ENABLED`. */
+const DISABLED_VALUES = new Set(["0", "false", "no", "off"]);
+
+/**
+ * Whether the configured proxy should be used. Default is **on**:
+ * only an explicit `0` / `false` / `no` / `off` skips it.
+ */
+export function isShaamProxyEnabled(): boolean {
+  const raw = process.env.SHAAM_PROXY_ENABLED?.trim().toLowerCase();
+  if (!raw) return true;
+  return !DISABLED_VALUES.has(raw);
+}
+
+/** `SHAAM_PROXY_URL` as configured, whether or not it is enabled. */
+function getConfiguredProxyUrl(): string | null {
   const raw = process.env.SHAAM_PROXY_URL?.trim();
   return raw && raw.length > 0 ? raw : null;
 }
 
-/** Host:port of the configured proxy, or null. Safe for log lines. */
+/** The proxy URL actually in effect: configured *and* enabled. */
+function getProxyUrl(): string | null {
+  if (!isShaamProxyEnabled()) return null;
+  return getConfiguredProxyUrl();
+}
+
+/**
+ * Host:port of the proxy in effect, or null when there is none —
+ * either unconfigured or disabled via `SHAAM_PROXY_ENABLED`. Safe for
+ * log lines.
+ */
 export function getShaamProxyHostPort(): string | null {
   const url = getProxyUrl();
   if (!url) return null;
@@ -53,7 +82,7 @@ function loadUndici(): UndiciModule {
   ) {
     throw new Error(
       `SHAAM proxy requires the Node runtime (got NEXT_RUNTIME=${process.env.NEXT_RUNTIME}). ` +
-        "Move the caller off the Edge runtime or unset SHAAM_PROXY_URL.",
+        "Move the caller off the Edge runtime, unset SHAAM_PROXY_URL, or set SHAAM_PROXY_ENABLED=0.",
     );
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -73,8 +102,8 @@ function getAgent(): InstanceType<UndiciModule["ProxyAgent"]> | null {
 
 /**
  * Drop-in replacement for `fetch` that routes traffic through
- * `SHAAM_PROXY_URL` when set, and behaves like global `fetch`
- * otherwise. When the proxy is active we call undici's `fetch`
+ * `SHAAM_PROXY_URL` when set and enabled, and behaves like global
+ * `fetch` otherwise. When the proxy is active we call undici's `fetch`
  * directly to bypass Next.js's patched global fetch.
  */
 export const shaamFetch: FetchImpl = (input, init) => {
@@ -88,7 +117,18 @@ export const shaamFetch: FetchImpl = (input, init) => {
           : String(input);
   const agent = getAgent();
   if (!agent) {
-    if (!getProxyUrl()) {
+    if (!isShaamProxyEnabled()) {
+      // Deliberate: the host's own egress is accepted by ITA. Not a
+      // warning — this is the configured state, not a misconfiguration.
+      shaamLog(
+        "proxy",
+        "SHAAM_PROXY_ENABLED is off — calling ITA directly from this host.",
+        {
+          url: targetUrl,
+          configured_proxy_url_set: Boolean(getConfiguredProxyUrl()),
+        },
+      );
+    } else {
       shaamWarn(
         "proxy",
         "SHAAM_PROXY_URL is not set — calling ITA directly. ITA only accepts Israeli IPs; if this is failing from a non-IL host that's the cause.",
@@ -109,4 +149,3 @@ export const shaamFetch: FetchImpl = (input, init) => {
     dispatcher: agent,
   }) as unknown as ReturnType<typeof fetch>;
 };
-

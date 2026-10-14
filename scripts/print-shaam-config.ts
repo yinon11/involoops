@@ -13,6 +13,10 @@ import {
   getShaamConfig,
   getShaamInvoicePath,
 } from "@/lib/shaam/client";
+import {
+  getShaamProxyHostPort,
+  isShaamProxyEnabled,
+} from "@/lib/shaam/proxy";
 
 function main() {
   const cfg = getShaamConfig();
@@ -46,6 +50,9 @@ function main() {
       cfg.clientId.length > 0 ? `${cfg.clientId.slice(0, 6)}…` : "(empty)",
     client_secret_set: Boolean(cfg.clientSecret),
     proxy_url_set: Boolean(process.env.SHAAM_PROXY_URL?.trim()),
+    proxy_enabled: isShaamProxyEnabled(),
+    // What shaamFetch will actually do: null = direct egress.
+    proxy_in_effect: getShaamProxyHostPort(),
     tenant_submit_serialize:
       process.env.SHAAM_TENANT_SUBMIT_SERIALIZE === "1" ? "1" : "0",
   };
