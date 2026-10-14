@@ -52,6 +52,7 @@ PUBLISHING.md                   # maintainer notes on this private/public split;
 # published: they describe how the implementation meets the ITA rules, which
 # is useful to anyone running this code.
 docs/marketing/                 # go-to-market drafts (launch video brief)
+docs/public-repo-reset.md       # maintainer notes on replacing the public repo: names every withheld path and why
 docs/ita-compliance/00-roadmap.md               # "Audience: the product owner"
 docs/ita-compliance/GO_LIVE.md                  # launch status + production proxy/egress detail
 docs/ita-compliance/KNOWN_ISSUES.md             # Form 513 blockers + production pre-launch checklist
