@@ -91,7 +91,8 @@ POST   /api/v1/invoices/{id}/re-extract
 DELETE /api/v1/invoices/{id}
 
 # Uploads (extraction pipeline)
-POST   /api/v1/uploads                      # returns presigned PUT URL
+POST   /api/v1/uploads                      # create the job, returns where to PUT
+POST   /api/v1/uploads/{uploadId}/content   # send the file bytes
 POST   /api/v1/uploads/{uploadId}/process   # confirm + start extraction
 GET    /api/v1/uploads/{uploadId}           # status (queued/processing/done/error)
 
@@ -130,7 +131,7 @@ Detailed contracts (request/response shapes, scope requirements, idempotency, st
 
 - **Server actions stay the source of truth.** Each REST route is a thin handler that authenticates the API key, resolves the user, calls the existing action (`createOutboundInvoice`, `issueOutboundInvoice`, etc.), and serializes the result. No domain logic moves.
 - **Compliance invariants stay enforced.** `appendAuditEntry`, `document-number-sequences` (gapless allocation), period locking, and Spec-04 immutability all run inside the existing actions, so the API inherits them for free.
-- **Storage flow.** API uploads use the presigned-URL pattern (`src/app/api/v1/uploads/route.ts`) — back-end SDK callers PUT to S3 directly. The web app no longer does this: browser uploads go through `src/app/api/upload/file/route.ts` so the bucket can stay private and the user never opens a cross-host TLS connection.
+- **Storage flow.** Every upload is streamed through the app — API callers POST to `/api/v1/uploads/{id}/content`, the web app to `/api/upload/file`. Neither touches storage directly, so the bucket stays private and needs no public hostname. `POST /uploads` advertised a presigned S3 PUT URL until 2026-10-14; it was signed against `S3_ENDPOINT`, which has to be reachable by the caller, and storage has no public hostname — so that PUT failed at DNS and `/process` answered 409 "File has not finished uploading". `/content` already existed for the mobile app; it is now the only advertised path.
 - **Rate limiter is reused.** `enforceRateLimit(key, max, windowSec)` already has the right shape; we add a `apikey:<id>` keyspace and swap the in-process Map for Redis when we go multi-node (the function signature stays the same — that swap is documented in `src/lib/rate-limit.ts:1-9`).
 
 ## 6. Capacity target

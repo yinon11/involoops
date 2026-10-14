@@ -3,8 +3,7 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getS3PresignClient, getS3ServerClient } from "@/lib/s3-clients";
+import { getS3ServerClient } from "@/lib/s3-clients";
 
 const BUCKET = process.env.S3_BUCKET!;
 
@@ -48,42 +47,6 @@ export async function uploadFile(
 const UPLOAD_URL_TTL_SECONDS = 15 * 60; // 15 minutes
 const DOWNLOAD_URL_TTL_SECONDS = 5 * 60; // 5 minutes
 
-/**
- * Generate a presigned URL for client-side uploads.
- */
-export async function getPresignedUploadUrl(
-  key: string,
-  contentType: string
-): Promise<string> {
-  const command = new PutObjectCommand({
-    Bucket: BUCKET,
-    Key: key,
-    ContentType: contentType,
-  });
-  return getSignedUrl(getS3PresignClient(), command, {
-    expiresIn: UPLOAD_URL_TTL_SECONDS,
-  });
-}
-
-/**
- * Generate a presigned URL for viewing/downloading a file.
- *
- * Default TTL is deliberately short (5 min) so leaked URLs stop working
- * fast. Pass a longer `expiresInSeconds` for use cases like emailing a
- * link to a third party — S3 v4 signing caps at 7 days (604800).
- */
-export async function getPresignedDownloadUrl(
-  key: string,
-  expiresInSeconds: number = DOWNLOAD_URL_TTL_SECONDS,
-): Promise<string> {
-  const command = new GetObjectCommand({
-    Bucket: BUCKET,
-    Key: key,
-  });
-  return getSignedUrl(getS3PresignClient(), command, {
-    expiresIn: Math.max(60, Math.min(expiresInSeconds, 7 * 24 * 60 * 60)),
-  });
-}
 
 /**
  * Download a file from S3/R2 and return it as a Buffer.

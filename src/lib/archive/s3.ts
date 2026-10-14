@@ -6,13 +6,12 @@ import {
   HeadObjectCommand,
   type ObjectLockMode,
 } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getS3PresignClient, getS3ServerClient } from "@/lib/s3-clients";
+import { getS3ServerClient } from "@/lib/s3-clients";
 
 /**
  * Archive bucket operations use `getS3ServerClient()` (internal MinIO URL in
- * Docker when `S3_INTERNAL_ENDPOINT` is set). Presigned archive downloads use
- * `getS3PresignClient()` so the browser gets a public hostname.
+ * Docker when `S3_INTERNAL_ENDPOINT` is set). Downloads are streamed to the
+ * browser by `/api/files/archive`, so the bucket needs no public hostname.
  */
 
 export function getArchiveBucketName(): string {
@@ -126,20 +125,6 @@ export async function getArchiveObjectBytes(params: {
   // @ts-expect-error S3 Body is an async iterable of chunks on Node.
   for await (const chunk of response.Body) chunks.push(chunk);
   return Buffer.concat(chunks);
-}
-
-export async function getArchiveDownloadUrl(params: {
-  key: string;
-  versionId: string;
-  contentType: string;
-}): Promise<string> {
-  const command = new GetObjectCommand({
-    Bucket: getArchiveBucketName(),
-    Key: params.key,
-    VersionId: params.versionId,
-    ResponseContentType: params.contentType,
-  });
-  return getSignedUrl(getS3PresignClient(), command, { expiresIn: 10 * 60 });
 }
 
 /** Exposed for the setup script; callers should normally use the named helpers above. */

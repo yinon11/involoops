@@ -16,7 +16,6 @@ function baseConfig() {
 }
 
 let serverClient: S3Client | null = null;
-let presignClient: S3Client | null = null;
 
 /**
  * S3 SDK client for server-side reads/writes (Node in Docker, cron, etc.).
@@ -36,22 +35,4 @@ export function getS3ServerClient(): S3Client {
     });
   }
   return serverClient;
-}
-
-/**
- * Client used only to build presigned URLs returned to the browser.
- * The host in those URLs must be reachable from the user's machine.
- */
-export function getS3PresignClient(): S3Client {
-  if (!presignClient) {
-    const endpoint = process.env.S3_ENDPOINT;
-    if (!endpoint) {
-      throw new Error("S3_ENDPOINT must be set");
-    }
-    presignClient = new S3Client({
-      ...baseConfig(),
-      endpoint,
-    });
-  }
-  return presignClient;
 }

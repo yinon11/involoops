@@ -317,7 +317,7 @@ serves the public app URL.
 | Variable | What to put | Tip |
 |----------|-------------|-----|
 | `AUTH_URL` | Full URL users type to open the app | Example: `http://involoops.com:3055`. If you put the app behind HTTPS on port 443, use `https://involoops.com` (no port) or whatever URL you actually use. Must match reality or login breaks. |
-| `S3_PUBLIC_ENDPOINT` | Full URL to MinIO’s **S3 API** on the **same host** users use | Example: `https://s3api.involoops.com` (reverse proxy to MinIO API), or `http://involoops.com:9105` if you expose port **9105** directly. The **browser** uploads here; wrong host/port = upload failures. |
+| `S3_PUBLIC_ENDPOINT` | URL the app uses to reach MinIO’s **S3 API** | Example: `http://minio:9000` on Compose. Nothing outside the server needs to reach it — uploads and downloads are streamed through the app, so MinIO can stay on the private network. |
 | `POSTGRES_PASSWORD` | A strong password | Used only inside Docker for the `invoices` database user. You can generate one with `openssl rand -hex 24`. |
 | `AUTH_SECRET` | A long random string | Run on your laptop or server: `openssl rand -base64 32` and paste the result. Used for cookies/sessions, not for Postgres. |
 | `MINIO_ROOT_USER` | Login name for MinIO | Example: `invoicesminio`. The app reuses this as the S3 “access key”. |

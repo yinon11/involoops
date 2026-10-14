@@ -769,10 +769,12 @@ export const uploadCreateSchema = z.object({
     .number()
     .int()
     .positive()
-    .max(50 * 1024 * 1024)
+    .max(25 * 1024 * 1024)
     .describe(
-      "File size in bytes. Hard cap is 50 MB — matches the web-app ceiling " +
-        "and the presigned URL's content-length condition.",
+      "File size in bytes, and the body length /content will require. Hard " +
+        "cap is 25 MB, the same ceiling the web app enforces. It read 50 MB " +
+        "until 2026-10-14, which let a create succeed for a file /content " +
+        "would then reject.",
     ),
 });
 export type UploadCreate = z.infer<typeof uploadCreateSchema>;

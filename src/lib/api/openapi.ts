@@ -1605,10 +1605,10 @@ function buildBaseSpec(): Record<string, unknown> {
       "/uploads": {
         post: op({
           operationId: "uploads.create",
-          summary: "Create an upload + presigned PUT URL",
+          summary: "Create an upload",
           description:
-            "Returns an upload_id you'll use to /process and poll, plus a short-lived S3 presigned PUT URL " +
-            "you PUT the file bytes to directly (no proxy through this API). Max file size: 50 MB.",
+            "Returns an upload_id you'll use to /process and poll, plus where to send the file bytes \u2014 " +
+            "POST them to /uploads/{id}/content, which streams them through the app. Max file size: 25 MB.",
           tags: ["Uploads"],
           scope: "uploads:write",
           parameters: [idempotencyKeyHeader],
@@ -1641,8 +1641,9 @@ function buildBaseSpec(): Record<string, unknown> {
           operationId: "uploads.content",
           summary: "Upload the file bytes through the app",
           description:
-            "Raw body, Content-Type matching the upload. Use this when the client cannot reach " +
-            "the storage host. The presigned URL from POST /uploads stays available for callers that can.",
+            "Raw body, Content-Type matching the upload, body length matching size_bytes. " +
+            "This is how file bytes reach the API \u2014 POST /uploads returns this URL. Storage has no " +
+            "public hostname, so there is no direct-to-storage alternative.",
           tags: ["Uploads"],
           scope: "uploads:write",
           parameters: [idParam],

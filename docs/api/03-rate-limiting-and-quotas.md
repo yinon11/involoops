@@ -13,7 +13,7 @@ The single Node process has finite throughput. With hundreds of concurrent integ
 | **Concurrent** | 8 in-flight | Per API key. Excess returns 429 immediately rather than queueing. |
 | **Daily quota** | Plan-tier (see below) | Per user, summed across all that user's keys. |
 | **Issue-path** | 10 req / 1 s per `(business_entity, document_type, tax_year)` | Protects gapless allocator. |
-| **Upload presign (API)** | 120 / 60 s per user (`/api/v1/uploads/route.ts`). | Shared `presign:<userId>` keyspace with the in-app upload flow (`/api/upload/file/route.ts`). |
+| **Upload create (API)** | 120 / 60 s per user (`/api/v1/uploads/route.ts`). | Shared `presign:<userId>` keyspace with the in-app upload flow (`/api/upload/file/route.ts`). The keyspace name predates streaming the bytes through the app. |
 | **Auth-failure brake** | 10 fails / 60 s per `publicId` → temporary 5 min freeze | Slows credential stuffing. |
 
 ### Plan tiers (initial)

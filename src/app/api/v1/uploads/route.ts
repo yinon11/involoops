@@ -6,7 +6,8 @@ import { runApiRoute } from "@/lib/api/handler";
 import { ApiError } from "@/lib/api/errors";
 import { uploadCreateSchema } from "@/lib/api/schemas";
 import { serializeUploadJob } from "@/lib/api/serializers/upload-job";
-import { buildFileKey, getPresignedUploadUrl } from "@/lib/storage";
+import { buildFileKey } from "@/lib/storage";
+import { getPublicAppOrigin } from "@/lib/public-app-origin";
 import {
   isAllowedMime,
   safeExtensionFromFilename,
@@ -20,14 +21,22 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/v1/uploads
  *
- * Mints a presigned S3 PUT URL plus an `upload_job` row to track the
- * lifecycle. Rate limit + quota mirror the web-app presign route so the
- * API cannot be used to evade existing limits.
+ * Creates an `upload_job` row and points the caller at `/content`, which
+ * streams the bytes through the app. Rate limit + quota mirror the web-app
+ * upload route so the API cannot be used to evade existing limits.
+ *
+ * This used to return a presigned S3 PUT URL instead. That URL was signed
+ * against `S3_ENDPOINT`, which has to be a hostname the *caller* can reach;
+ * storage has no public hostname, so the PUT failed at DNS and `/process`
+ * then answered 409 "File has not finished uploading" — which reads like a
+ * timing problem and is not. `/content` already existed for exactly this
+ * reason (the mobile app hit it first); it is now the only advertised path.
  *
  * Response carries:
- *   - upload_id   — use this to poll or process
- *   - url + method + headers  — the presigned PUT
- *   - expires_in_seconds — TTL for the PUT URL
+ *   - upload_id   — use this to send the bytes, poll, or process
+ *   - url + method + headers  — where and how to send the file
+ *   - expires_in_seconds — kept for response-shape compatibility; nothing
+ *     expires an `awaiting_upload` job today
  */
 export async function POST(req: NextRequest) {
   return runApiRoute(
@@ -37,7 +46,7 @@ export async function POST(req: NextRequest) {
       body: uploadCreateSchema,
       idempotency: "required",
     },
-    async ({ ctx, body }) => {
+    async ({ ctx, body, req: request }) => {
       // Shared 120/min presign limit across web + API — prevents the API
       // from being used to evade the existing per-user cap.
       const limited = await enforceRateLimit(`presign:${ctx.user.id}`, 120, 60);
@@ -83,8 +92,6 @@ export async function POST(req: NextRequest) {
       const apiFileName = `api/${uniqueName}`;
       const fileKey = buildFileKey(ctx.user.id, apiFileName);
 
-      const url = await getPresignedUploadUrl(fileKey, body.content_type);
-
       const [row] = await db
         .insert(uploadJobs)
         .values({
@@ -104,10 +111,15 @@ export async function POST(req: NextRequest) {
           ...serializeUploadJob(row),
           upload_id: row.id,
           upload: {
-            url,
-            method: "PUT",
+            url: new URL(
+              `/api/v1/uploads/${row.id}/content`,
+              getPublicAppOrigin(request),
+            ).toString(),
+            method: "POST",
+            // Needs the same Authorization header as this call: a presigned
+            // URL carried its own credential, this one does not.
             headers: { "Content-Type": body.content_type },
-            expires_in_seconds: 900, // matches UPLOAD_URL_TTL_SECONDS (15 min)
+            expires_in_seconds: 900,
           },
         },
       };
