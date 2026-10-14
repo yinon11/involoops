@@ -39,6 +39,24 @@ cd "$ROOT"
 [[ -f "$EXCLUDE_FILE" ]] || die "$EXCLUDE_FILE is missing — nothing would be excluded."
 [[ -z "$(git status --porcelain)" ]] || die "working tree is dirty. Commit or stash first: the public tree is built from HEAD, so uncommitted work would be silently left out."
 
+# Who the public history is attributed to. This used to inherit whatever git
+# identity the machine running the publish happened to carry, which is wrong in
+# a way nobody notices until the repository is public and GitHub's Contributors
+# panel names a CI runner or an agent container as the project's sole author.
+# That is exactly what happened on 2026-10-14. Fail loudly instead.
+AUTHOR_NAME="${PUBLISH_AUTHOR_NAME:-$(git config user.name)}"
+AUTHOR_EMAIL="${PUBLISH_AUTHOR_EMAIL:-$(git config user.email)}"
+[[ -n "$AUTHOR_NAME" && -n "$AUTHOR_EMAIL" ]] \
+  || die "no git identity to attribute the public commit to. Set user.name and user.email, or PUBLISH_AUTHOR_NAME / PUBLISH_AUTHOR_EMAIL."
+case "$AUTHOR_EMAIL" in
+  *noreply@anthropic.com|*bot@*|*\[bot\]*|*actions@github.com|*noreply@github.com)
+    die "refusing to attribute the public tree to '$AUTHOR_NAME <$AUTHOR_EMAIL>'.
+That is a bot or agent identity, and this commit becomes the public project's
+authorship. Run the publish from a checkout configured with the maintainer's
+identity, or set PUBLISH_AUTHOR_NAME and PUBLISH_AUTHOR_EMAIL." ;;
+esac
+echo "  attributing to $AUTHOR_NAME <$AUTHOR_EMAIL>"
+
 SRC_SHA="$(git rev-parse --short HEAD)"
 SRC_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 log "Source: $SRC_BRANCH @ $SRC_SHA ($(git ls-tree -r HEAD --name-only | wc -l) tracked files)"
@@ -264,7 +282,8 @@ fi
 # ---------- Publish ----------------------------------------------------------
 
 log "Committing and pushing to $PUBLIC_BRANCH"
-git -C "$PUB" -c user.name="$(git config user.name)" -c user.email="$(git config user.email)" \
+
+git -C "$PUB" -c user.name="$AUTHOR_NAME" -c user.email="$AUTHOR_EMAIL" \
   commit --quiet -m "Public tree — rebuilt $(date -u +%Y-%m-%d) from the private head ($SRC_SHA), minus the exclusion list"
 git -C "$PUB" push --quiet -u origin "$PUBLIC_BRANCH"
 log "Published $(git -C "$PUB" rev-parse --short HEAD) (was $PUB_BEFORE)"
