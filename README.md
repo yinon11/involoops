@@ -417,7 +417,9 @@ are entitled to the source of your version under the same licence.
 
 **Commercial licence.** If you want to build on InvoLoops without the AGPL's
 obligations — for example, embedding it in a closed product — a commercial
-licence is available from the maintainer. Contributions are accepted under the
+licence is available from the maintainer. Write to
+**<support@involoops.com>** with "commercial licence" in the subject.
+Contributions are accepted under the
 [Contributor Licence Agreement](./CLA.md), which is what makes this possible.
 
 **Name and logo.** The licence covers the code, not the InvoLoops name or
