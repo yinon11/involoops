@@ -7,10 +7,9 @@ export const runtime = "nodejs";
 /**
  * Entry resolver for the accountant login page (`/login/accountant`).
  *
- * Same credentials as `/login`, but the default landing is Studio
- * (`/creator`). The mode cookie is set by `middleware.ts` once that
- * path is hit. Delegates to `resolve-entry-session` so act-as /
- * switch-back still run in one place.
+ * Same credentials as `/login`, but the default landing is the income
+ * overview (`/money-in`) rather than the home dashboard. Delegates to
+ * `resolve-entry-session` so act-as / switch-back still run in one place.
  */
 function safeNext(request: Request): string | null {
   const raw = new URL(request.url).searchParams.get("next");

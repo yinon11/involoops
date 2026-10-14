@@ -100,7 +100,8 @@ export function GoogleSignInButton({
       // Route through the entry-session resolver so a sub-user with a single
       // linked owner lands directly inside that owner's account. The resolver
       // forwards an explicit deep-link via `next` for everyone else. The
-      // accountant variant uses the Studio-aware wrapper resolver instead.
+      // accountant variant uses the wrapper resolver that lands on the
+      // income overview instead.
       const resolver = accountant
         ? "/api/auth/resolve-accountant-entry"
         : "/api/auth/resolve-entry-session";

@@ -58,8 +58,8 @@ const loginSchema = z.object({
     .startsWith("/", "callbackUrl must be a relative path")
     .optional(),
   /**
-   * Set by the accountant login page. Routes feature holders straight to the
-   * Studio shell after sign-in (see `/api/auth/resolve-accountant-entry`).
+   * Set by the accountant login page. Routes them straight to the income
+   * overview after sign-in (see `/api/auth/resolve-accountant-entry`).
    */
   accountant: z.enum(["true", "false"]).optional(),
 });
@@ -218,8 +218,8 @@ export async function loginAction(formData: FormData) {
     // explicit ?callbackUrl=... by appending it as `next`.
     //
     // The accountant entry point uses a thin wrapper resolver that lands
-    // the user in the Studio shell (`/creator`) before delegating to the
-    // same entry-session logic.
+    // the user on the income overview before delegating to the same
+    // entry-session logic.
     const next = validated.data.callbackUrl;
     const base =
       validated.data.accountant === "true"

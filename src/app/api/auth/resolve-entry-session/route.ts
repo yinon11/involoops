@@ -6,7 +6,6 @@ import { db } from "@/db";
 import { accountLinks, users } from "@/db/schema";
 import { getPublicAppOrigin } from "@/lib/public-app-origin";
 import { hasSwitchBackCookie } from "@/lib/team/switch-back-cookie";
-import { isStudioPinnedEmail } from "@/lib/auth/studio-pinned-accounts";
 
 export const runtime = "nodejs";
 
@@ -51,25 +50,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/login", origin));
   }
 
-  let next = safeNext(request);
-
-  // Studio-pinned accounts always land in the creator shell. Resolve the
-  // signed-in user's own email (the credentials/OAuth account before any
-  // act-as switch) and override the destination. `/creator` flips the mode
-  // cookie to "creator" via middleware, so the Studio shell renders.
-  const signedInUserId = session.user.id;
-  if (signedInUserId) {
-    const me = await db.query.users.findFirst({
-      where: eq(users.id, signedInUserId),
-      columns: { email: true },
-    });
-    if (
-      isStudioPinnedEmail(me?.email) &&
-      !next.startsWith("/oauth/interaction/")
-    ) {
-      next = "/money-in";
-    }
-  }
+  const next = safeNext(request);
 
   // Case 1 — already acting-as, send back to the originator.
   const originatorId = session.user.originator?.id;
