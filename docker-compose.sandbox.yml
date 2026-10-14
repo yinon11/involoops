@@ -1,0 +1,145 @@
+# Sandbox — this Compose file is for sandbox deployment (project `invoices_sandbox`; e.g. ~/invoices_sandbox on the host).
+# For production use `docker-compose.yml` instead.
+#
+# Sandbox stack — parallel to production, separate DB / MinIO / volumes / ports.
+# Project name `invoices_sandbox` keeps volumes and networks distinct from `invoices`.
+#
+# Host ports (production in parentheses):
+#   App:        3056 (3055)
+#   MinIO API:  9107 (9105)
+#   MinIO UI:   127.0.0.1:9108 (9106)
+#   pgAdmin:    127.0.0.1:5052 (5051)
+#
+# Required: `.env.sandbox` (copy from `.env.sandbox.example`): same keys as production
+# deploy, but point AUTH_URL / S3 / MinIO URLs at sandbox hostnames.
+# Run Compose with `--env-file .env.sandbox` so `${…}` interpolation matches that file.
+
+name: invoices_sandbox
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: invoices-sandbox-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: invoices_sandbox
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env.sandbox (use docker compose --env-file .env.sandbox)}
+      POSTGRES_DB: invoices_sandbox
+    ports:
+      - "127.0.0.1:5441:5432"
+    volumes:
+      - sandbox_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U invoices_sandbox -d invoices_sandbox",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+  minio:
+    image: minio/minio:latest
+    container_name: invoices-sandbox-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set in .env.sandbox}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in .env.sandbox}
+      MINIO_SERVER_URL: ${MINIO_SERVER_URL:?MINIO_SERVER_URL must be set in .env.sandbox}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:?MINIO_BROWSER_REDIRECT_URL must be set in .env.sandbox}
+    volumes:
+      - sandbox_miniodata:/data
+    ports:
+      - "127.0.0.1:9107:9000"
+      - "127.0.0.1:9108:9001"
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: invoices-sandbox-minio-init
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_ARCHIVE_BUCKET: ${S3_ARCHIVE_BUCKET:-invoices-archive-sandbox}
+      # Set to 1 once if the archive bucket was created without --with-lock (put-object-lock will fail until recreated).
+      SANDBOX_RECYCLE_ARCHIVE_BUCKET: ${SANDBOX_RECYCLE_ARCHIVE_BUCKET:-0}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sleep 8
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb local/invoices-sandbox --ignore-existing || true
+        # Archive bucket: Object Lock must be enabled at creation (Spec 05 / issuance).
+        if [ "$$SANDBOX_RECYCLE_ARCHIVE_BUCKET" = "1" ]; then
+          mc rb --force "local/$$S3_ARCHIVE_BUCKET" 2>/dev/null || true
+        fi
+        mc mb "local/$$S3_ARCHIVE_BUCKET" --with-lock --ignore-existing || true
+        mc version enable "local/$$S3_ARCHIVE_BUCKET" || true
+    restart: "no"
+
+  # Archive Object Lock Rule is applied inside the app container (see Dockerfile CMD:
+  # scripts/ensure-archive-bucket-lock.mjs) so we use the same @aws-sdk/client-s3 as production.
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: invoices-sandbox-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3056:3000"
+    # OAUTH_JWKS arrives through this env file. Do not also interpolate it under
+    # `environment:` — the JSON would be parsed as YAML and never reach the process.
+    env_file:
+      - .env.sandbox
+    environment:
+      INVOICE_DEBUG_AUTH: ${INVOICE_DEBUG_AUTH:-}
+      INVOICE_DEBUG_DB: ${INVOICE_DEBUG_DB:-}
+      # Runtime role vs boot-migration owner — same split as production
+      # (scripts/sql/create-app-role.sql with the sandbox role names).
+      DATABASE_URL: postgres://invoices_sandbox_app:${POSTGRES_APP_PASSWORD:?POSTGRES_APP_PASSWORD must be set in .env.sandbox}@postgres:5432/invoices_sandbox
+      MIGRATE_DATABASE_URL: postgres://invoices_sandbox:${POSTGRES_PASSWORD}@postgres:5432/invoices_sandbox
+      AUTH_TRUST_HOST: "true"
+      AUTH_URL: ${AUTH_URL:?AUTH_URL must be set in .env.sandbox}
+      NEXTAUTH_URL: ${AUTH_URL}
+      S3_ENDPOINT: ${S3_PUBLIC_ENDPOINT:?S3_PUBLIC_ENDPOINT must be set in .env.sandbox}
+      # Server-side SDK calls use MinIO on the Compose network (no public DNS needed).
+      S3_INTERNAL_ENDPOINT: http://minio:9000
+      S3_BUCKET: invoices-sandbox
+      S3_ARCHIVE_BUCKET: ${S3_ARCHIVE_BUCKET:-invoices-archive-sandbox}
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-${MINIO_ROOT_USER}}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-${MINIO_ROOT_PASSWORD}}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      # Sandbox signs only with its own key. These override .env.sandbox so a
+      # copied production SIGNING_PRIVATE_KEY_FILE cannot point this process
+      # at the production PEM. SIGNING_KEY_ID stays in .env.sandbox.
+      SIGNING_ENVIRONMENT: sandbox
+      SIGNING_PRIVATE_KEY_FILE: /etc/involoops/signing-private-key-sandbox.pem
+      SIGNING_PRODUCTION_KEY_IDS_FILE: /etc/involoops/production-signing-key-ids
+    volumes:
+      # PAdES-B PDF signing keystore (shared with prod compose; same host file).
+      # Host file owned root:ubuntu 640; mounted read-only so the secret never
+      # enters the image. `.env.sandbox` must set INVOLOOPS_PDF_SIGNING_P12_PATH to this path.
+      - /etc/involoops/pdf-signing-keystore-prod.p12:/etc/involoops/pdf-signing-keystore-prod.p12:ro
+      # Sandbox document-signing key. Distinct file from production. Host file
+      # owned root:ubuntu 640. Do not mount signing-private-key.pem here.
+      - /etc/involoops/signing-private-key-sandbox.pem:/etc/involoops/signing-private-key-sandbox.pem:ro
+      # Production key ids (public identifiers only). Boot refuses if
+      # SIGNING_KEY_ID is in this file.
+      - /etc/involoops/production-signing-key-ids:/etc/involoops/production-signing-key-ids:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+
+volumes:
+  sandbox_pgdata:
+  sandbox_miniodata:

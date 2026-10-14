@@ -1,0 +1,60 @@
+# Paths kept OUT of the public tree (yinon11/involoops) by
+# scripts/publish-public-tree.sh.
+#
+# One path per line, relative to the repo root. A trailing slash means the
+# whole directory. Blank lines and #-comments are ignored.
+#
+# This list was recovered from the 2026-10-03 rebuild (private head 2b7df3f
+# -> public ea0934f, 82 paths) and cross-checked against the exclusion table
+# in docs/open-source-readiness.md. Keep the rationale there; keep the paths
+# here, so the publish step is mechanical and reviewable.
+
+# --- Secrets and deployment plumbing ----------------------------------------
+.sops.yaml
+server/                         # env.production.enc.json, env.sandbox.enc.json, host-crontab
+
+# --- Operational runbooks and the candid gap list ---------------------------
+docs/open-source-readiness.md   # candid gap list
+docs/offsite-backup.md
+docs/disaster-recovery.md
+docs/privacy/                   # database definitions: access, security arrangements, gaps
+
+# --- Backup / restore / env tooling tied to our own infrastructure ----------
+scripts/encrypt-env.sh
+scripts/offsite-backup.sh
+scripts/offsite-restore-db.sh
+scripts/disaster-restore.sh
+
+# --- One-customer migration tooling (the feature code itself IS published) --
+scripts/validate-movein.ts
+scripts/verify-movein.ts
+
+# --- Our own ITA filing artifacts and third-party specifications ------------
+docs/ita-compliance/form-513-submission/   # our Form 513 application packet
+docs/ita-compliance/references/            # the Tax Authority's own PDFs: copyright + third-party contacts
+docs/ita-compliance/11-israel-egress.md    # production addresses: app server, proxy, security group
+
+# --- Archived migrations ----------------------------------------------------
+drizzle/legacy/                 # applied by hand, never run by a fresh install; one grants admin by hardcoded email
+
+# --- Added 2026-10-13 -------------------------------------------------------
+.agents/skills/                 # vendored third-party Expo skill docs (MIT, not ours)
+skills-lock.json
+public/certificates/            # our own ITA software-registration certificate
+scripts/_tmp-verify-credit.ts   # leftover debugging script
+PUBLISHING.md                   # maintainer notes on this private/public split; links to the readiness doc
+
+# --- Added 2026-10-14: internal planning / status layer ---------------------
+# These are maintainer working documents, not product documentation. They
+# carry regulatory status ("submitted, to confirm with the advisor"),
+# production egress architecture, candid self-assessment of our own
+# compliance work, and go-to-market notes. The numbered specs 01-10 stay
+# published: they describe how the implementation meets the ITA rules, which
+# is useful to anyone running this code.
+docs/marketing/                 # go-to-market drafts (launch video brief)
+docs/ita-compliance/00-roadmap.md               # "Audience: the product owner"
+docs/ita-compliance/GO_LIVE.md                  # launch status + production proxy/egress detail
+docs/ita-compliance/KNOWN_ISSUES.md             # Form 513 blockers + production pre-launch checklist
+docs/ita-compliance/spec-audit-v2.md            # internal audit; cites the withheld ITA PDFs
+docs/ita-compliance/shaam-rejection-plan.md     # superseded internal plan
+docs/ita-compliance/uniform-structure-v1.31-rewrite.md  # session review handoff

@@ -1,0 +1,419 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1776758327643,
+      "tag": "0000_baseline_full_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776779043021,
+      "tag": "0001_preferred_locale",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776800000000,
+      "tag": "0002_email_templates_locale",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776900000000,
+      "tag": "0003_email_logs_user_id_nullable",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776952600396,
+      "tag": "0004_drop_company_registration_number",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777000000000,
+      "tag": "0005_user_feature_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777100000000,
+      "tag": "0006_drop_needs_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777200000000,
+      "tag": "0007_feature_interest_votes",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777300000000,
+      "tag": "0008_uefs_active_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777400000000,
+      "tag": "0009_shaam_pdf_kind_and_queued_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777500000000,
+      "tag": "0010_drafts_no_invoice_number",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1777600000000,
+      "tag": "0011_business_entity_default_vat_inclusive",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1777700000000,
+      "tag": "0012_resync_document_sequences",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1777800000000,
+      "tag": "0013_user_auto_approve_prompt",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1777900000000,
+      "tag": "0014_invoices_sent_to_accountant_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1778000000000,
+      "tag": "0015_stripe_billing_invoices",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1778100000000,
+      "tag": "0016_subscription_billing_receipts",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1778200000000,
+      "tag": "0017_drop_subscription_billing_receipts",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1778300000000,
+      "tag": "0018_team_invitations_and_capabilities",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1778400000000,
+      "tag": "0019_tax_estimate_inputs",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1778500000000,
+      "tag": "0020_projects_milestones",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1778600000000,
+      "tag": "0021_recommendations",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1778700000000,
+      "tag": "0022_onboarding_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1778800000000,
+      "tag": "0023_expense_classification",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1778900000000,
+      "tag": "0024_account_links_auto_act_as",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1779000000000,
+      "tag": "0025_users_auto_act_as_managed_accounts",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1779100000000,
+      "tag": "0026_movein_export",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1779200000000,
+      "tag": "0027_invoice_movein_enrichment",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1779300000000,
+      "tag": "0028_invoice_customer_account",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1781003752535,
+      "tag": "0029_fx_rates",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1781500000000,
+      "tag": "0030_authorized_sender_emails",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1781600000000,
+      "tag": "0031_outbound_customer_daily_cap",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1790035200000,
+      "tag": "0032_oauth_adapter_payloads",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1790400000000,
+      "tag": "0034_business_entities_osek_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790200000000,
+      "tag": "0033_business_entity_shaam_sandbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1790600000000,
+      "tag": "0035_signing_key_revoked_after",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1790800000000,
+      "tag": "0036_outbound_printed_date",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791000000000,
+      "tag": "0037_withholding_certificate",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791100000000,
+      "tag": "0038_invoice_template_bank_details",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791200000000,
+      "tag": "0039_drop_template_business_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791200100000,
+      "tag": "0040_shaam_rejection_choice",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1791200200000,
+      "tag": "0041_shaam_hearing_deadline",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791200300000,
+      "tag": "0042_shaam_hold_poll_count",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1791200400000,
+      "tag": "0043_shaam_unresolved_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1791200500000,
+      "tag": "0044_reverse_charge_consents",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1791200600000,
+      "tag": "0045_outbound_customer_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1791300500000,
+      "tag": "0046_reverse_charge_invoices",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1791400500000,
+      "tag": "0047_invoice_fx_rate",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1791500500000,
+      "tag": "0048_fx_rate_published_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1791600500000,
+      "tag": "0049_reverse_charge_replacement",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1791600600000,
+      "tag": "0050_app_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1791700700000,
+      "tag": "0051_device_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1791800800000,
+      "tag": "0052_cash_ceiling_exceeded",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1791900900000,
+      "tag": "0053_invoice_original_released",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1792001000000,
+      "tag": "0054_issued_income_mirror",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1792101000000,
+      "tag": "0055_sponsor_campaigns",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1792201000000,
+      "tag": "0056_sponsor_placement_image",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1792301000000,
+      "tag": "0057_privacy_population_snapshots",
+      "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1792401000000,
+      "tag": "0058_google_email_verified",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "InvoLoops",
+    "slug": "involoops",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "involoops",
+    "userInterfaceStyle": "automatic",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ttpgo.involoops",
+      "infoPlist": {
+        "NSCameraUsageDescription": "InvoLoops uses the camera to photograph supplier invoices so they can be read and approved.",
+        "NSPhotoLibraryUsageDescription": "InvoLoops uses your photos so you can attach a supplier invoice you already saved."
+      }
+    },
+    "android": {
+      "package": "com.ttpgo.involoops",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F766E",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.CAMERA"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store",
+      "expo-sharing",
+      "expo-image",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "InvoLoops uses the camera to photograph supplier invoices so they can be read and approved.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "InvoLoops uses your photos so you can attach a supplier invoice you already saved."
+        }
+      ]
+    ],
+    "extra": {
+      "router": {}
+    }
+  }
+}

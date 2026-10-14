@@ -1,0 +1,15 @@
+node_modules
+mobile
+.next
+.git
+.gitignore
+*.md
+.env
+.env.*
+!.env.docker.example
+docker-compose.yml
+.drizzle
+*.p12
+*.pfx
+*.pem
+*.key

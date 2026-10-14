@@ -1,0 +1,42 @@
+# Schedule for the app's /api/cron/* routes. Runs in the `cron` service.
+#
+# Times are in the service's TZ (docker-compose.yml sets Asia/Jerusalem).
+#
+# Job output goes to /proc/1/fd/1 — PID 1 in this container is crond, so that
+# is the container's stdout and everything lands in `docker compose logs cron`.
+# Without the redirect busybox crond tries to mail job output and it is lost.
+#
+# cron-post.sh holds a per-route lock, so a run that outlives its interval
+# makes the next tick skip rather than pile up.
+#
+# Adding a route: add the route handler under src/app/api/cron/, add a line
+# here, deploy. The schedule ships with the code that needs it — that is the
+# entire point of this file existing.
+
+# --- queue drains: every minute ---------------------------------------
+* * * * *    /app/scripts/cron-post.sh webhook-deliveries      > /proc/1/fd/1 2>&1
+* * * * *    /app/scripts/cron-post.sh extract-uploads         > /proc/1/fd/1 2>&1
+
+# --- ITA reconciliation ------------------------------------------------
+*/15 * * * * /app/scripts/cron-post.sh shaam-retry-pending     > /proc/1/fd/1 2>&1
+0 */6 * * *  /app/scripts/cron-post.sh shaam-refresh-tokens    > /proc/1/fd/1 2>&1
+0 3 * * *    /app/scripts/cron-post.sh shaam-expire-scan       > /proc/1/fd/1 2>&1
+0 6 * * *    /app/scripts/cron-post.sh shaam-hearing-deadlines > /proc/1/fd/1 2>&1
+0 5 * * 1    /app/scripts/cron-post.sh shaam-stuck-reminder    > /proc/1/fd/1 2>&1
+
+# --- email ------------------------------------------------------------
+# Replaces the host crontab line running scripts/cron-funnel-emails.sh.
+# REMOVE THAT HOST LINE when this service goes live or funnels send twice.
+*/15 * * * * /app/scripts/cron-post.sh funnel-emails           > /proc/1/fd/1 2>&1
+0 7 * * *    /app/scripts/cron-post.sh error-digest            > /proc/1/fd/1 2>&1
+
+# --- housekeeping ------------------------------------------------------
+0 2 * * *    /app/scripts/cron-post.sh purge-scheduled-deletions > /proc/1/fd/1 2>&1
+0 4 * * *    /app/scripts/cron-post.sh cleanup-idempotency-keys  > /proc/1/fd/1 2>&1
+0 3 * * *    /app/scripts/cron-post.sh verify-archive-chains     > /proc/1/fd/1 2>&1
+0 4 * * 1    /app/scripts/cron-post.sh verify-archive-locks      > /proc/1/fd/1 2>&1
+
+# --- deliberately OFF --------------------------------------------------
+# recommendations calls the Anthropic API for up to 50 users per run, so
+# enabling it costs money on a schedule. Uncomment when you want that.
+# 0 8 * * *  /app/scripts/cron-post.sh recommendations         > /proc/1/fd/1 2>&1

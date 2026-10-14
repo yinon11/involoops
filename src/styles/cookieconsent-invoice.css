@@ -1,0 +1,160 @@
+/*
+ * vanilla-cookieconsent v3 — Involoops theme
+ * Import after `vanilla-cookieconsent/dist/cookieconsent.css`.
+ */
+
+#cc-main {
+  direction: ltr;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+#cc-main .cm {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 32px hsl(var(--foreground) / 0.06);
+  padding: 20px 28px;
+  max-width: 100%;
+}
+
+#cc-main .cm__title {
+  color: hsl(var(--foreground));
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+#cc-main .cm__desc {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+#cc-main .cm__desc a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+
+#cc-main .cm__btn {
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 10px 22px;
+  transition: all 0.2s;
+}
+
+#cc-main .cm__btn--primary {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+}
+
+#cc-main .cm__btn--primary:hover {
+  filter: brightness(0.95);
+}
+
+#cc-main .cm__btn--secondary {
+  background: transparent;
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+#cc-main .cm__btn--secondary:hover {
+  background: hsl(var(--muted));
+}
+
+#cc-main .cm__btn--tertiary {
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  border: none;
+  font-weight: 400;
+  font-size: 0.8rem;
+  text-decoration: underline;
+  padding: 8px 12px;
+}
+
+#cc-main .pm {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 20px;
+  box-shadow: 0 8px 48px hsl(var(--foreground) / 0.1);
+}
+
+#cc-main .pm__title {
+  color: hsl(var(--foreground));
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+#cc-main .pm__section-title {
+  color: hsl(var(--foreground));
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+#cc-main .pm__section-desc {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+#cc-main .pm__section-desc a {
+  color: hsl(var(--primary));
+}
+
+#cc-main input[type="checkbox"].section__toggle:checked + .toggle__icon {
+  background: hsl(var(--primary));
+}
+
+#cc-main .pm__btn-group {
+  gap: 10px;
+}
+
+#cc-main .pm__btn {
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 10px 22px;
+  transition: all 0.2s;
+}
+
+#cc-main .pm__btn--primary {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+}
+
+#cc-main .pm__btn--secondary {
+  background: transparent;
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+#cc-main .pm__btn--tertiary {
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+#cc-main .cm__footer a,
+#cc-main .pm__footer a {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.78rem;
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  #cc-main .cm {
+    padding: 16px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  #cc-main .cm__btns {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #cc-main .cm__btn {
+    width: 100%;
+    text-align: center;
+  }
+}

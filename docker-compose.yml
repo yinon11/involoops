@@ -1,0 +1,202 @@
+# Production — this Compose file is for production deployment (project `invoices`; e.g. ~/invoices on the host).
+# For sandbox use `docker-compose.sandbox.yml` instead.
+#
+# Invoice app stack — isolated project name; does not touch other Docker containers.
+# Web UI: host port 3055 → container 3000
+# MinIO S3 API: 9105 (browser must reach this for presigned uploads)
+# MinIO console: 9106 (bound to 127.0.0.1 by default — expose via reverse proxy if needed)
+# pgAdmin UI: host port 5051 → container 80 (bound to 127.0.0.1 by default)
+#
+# Required environment variables (no weak defaults — deployment fails early if missing):
+#   POSTGRES_PASSWORD, MINIO_ROOT_USER, MINIO_ROOT_PASSWORD,
+#   PGADMIN_DEFAULT_EMAIL, PGADMIN_DEFAULT_PASSWORD,
+#   MINIO_SERVER_URL, MINIO_BROWSER_REDIRECT_URL, S3_PUBLIC_ENDPOINT, AUTH_URL
+
+name: invoices
+
+services:
+  # No host ports: Postgres is only reachable on the compose network as hostname "postgres" (service name).
+  postgres:
+    image: postgres:16-alpine
+    container_name: invoices-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: invoices
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_DB: invoices
+    ports:
+      - "127.0.0.1:5440:5432"
+    volumes:
+      - invoices_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoices -d invoices"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+  minio:
+    # The upstream images are gone from Docker Hub (2026-09-11) and quay.io;
+    # this tag exists only in the local cache / the rescue tar.gz. The build
+    # stanza recreates it from source — see docker/minio/Dockerfile. Compose
+    # prefers the cached image; `docker compose build minio` rebuilds.
+    image: minio/minio:latest
+    build:
+      context: docker/minio
+      target: minio
+    container_name: invoices-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in .env}
+      # Required when Console and S3 API use different public URLs (reverse proxy / split hostnames).
+      MINIO_SERVER_URL: ${MINIO_SERVER_URL:?MINIO_SERVER_URL must be set in .env}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:?MINIO_BROWSER_REDIRECT_URL must be set in .env}
+    volumes:
+      - invoices_miniodata:/data
+    ports:
+      # S3 API must be reachable from the browser for presigned uploads —
+      # reverse-proxy this with TLS and auth in production.
+      - "127.0.0.1:9105:9000"
+      # Admin console bound to loopback; access via SSH tunnel.
+      - "127.0.0.1:9106:9001"
+
+  minio-init:
+    # Same situation as the minio service: unpullable upstream tag, rebuilt
+    # from source via docker/minio/Dockerfile.
+    image: minio/mc:latest
+    build:
+      context: docker/minio
+      target: mc
+    container_name: invoices-minio-init
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_ARCHIVE_BUCKET: ${S3_ARCHIVE_BUCKET:-invoices-archive}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sleep 8
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb local/invoices --ignore-existing || true
+        mc mb "local/$$S3_ARCHIVE_BUCKET" --with-lock --ignore-existing || true
+        mc version enable "local/$$S3_ARCHIVE_BUCKET" || true
+    restart: "no"
+
+  redis:
+    image: redis:7-alpine
+    container_name: invoices-redis
+    restart: unless-stopped
+    # No host port: Redis is only reachable on the compose network as hostname "redis".
+    volumes:
+      - invoices_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: invoices-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3055:3000"
+    # Load everything from `.env` next to this file (STRIPE_*, CRON_SECRET, SES_*, FX_*, etc.).
+    # `environment` below overrides only what must differ inside Compose (DB host, MinIO S3 mapping).
+    # OAUTH_JWKS (one-line private JWK Set) arrives through this env file. It is not
+    # repeated under `environment:` — interpolating that JSON into the compose file
+    # makes YAML parse it as a mapping, so the process would not receive the key.
+    env_file:
+      - .env
+    environment:
+      # Optional: INVOICE_DEBUG_AUTH=1 logs JWT/session steps; INVOICE_DEBUG_DB=1 logs postgres connection closes
+      INVOICE_DEBUG_AUTH: ${INVOICE_DEBUG_AUTH:-}
+      INVOICE_DEBUG_DB: ${INVOICE_DEBUG_DB:-}
+      # Runtime role: non-superuser, audit log is INSERT-only for it
+      # (scripts/sql/create-app-role.sql — run once per environment).
+      DATABASE_URL: postgres://invoices_app:${POSTGRES_APP_PASSWORD:?POSTGRES_APP_PASSWORD must be set in .env}@postgres:5432/invoices
+      # Boot migrations only (Dockerfile CMD): the DB owner.
+      MIGRATE_DATABASE_URL: postgres://invoices:${POSTGRES_PASSWORD}@postgres:5432/invoices
+      REDIS_URL: redis://redis:6379
+      AUTH_TRUST_HOST: "true"
+      AUTH_URL: ${AUTH_URL:?AUTH_URL must be set in .env}
+      NEXTAUTH_URL: ${AUTH_URL}
+      S3_ENDPOINT: ${S3_PUBLIC_ENDPOINT:?S3_PUBLIC_ENDPOINT must be set in .env}
+      S3_INTERNAL_ENDPOINT: http://minio:9000
+      S3_BUCKET: invoices
+      S3_ARCHIVE_BUCKET: ${S3_ARCHIVE_BUCKET:-invoices-archive}
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_REGION: us-east-1
+      # upload-actions.ts uses AWS_* for S3 GetObject; default to MinIO creds if unset in .env
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-${MINIO_ROOT_USER}}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-${MINIO_ROOT_PASSWORD}}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+    volumes:
+      # PAdES-B PDF signing keystore. Host file owned root:ubuntu 640;
+      # bind-mounted read-only so the secret never enters the image layer.
+      # `.env` must set INVOLOOPS_PDF_SIGNING_P12_PATH to this in-container path.
+      - /etc/involoops/pdf-signing-keystore-prod.p12:/etc/involoops/pdf-signing-keystore-prod.p12:ro
+      # Spec 04 document-signing private key. Host file owned root:ubuntu 640.
+      # `.env` sets SIGNING_PRIVATE_KEY_FILE to this path and does not contain the PEM.
+      - /etc/involoops/signing-private-key.pem:/etc/involoops/signing-private-key.pem:ro
+    # /api/v1/health is public, unauthenticated and does not touch the DB.
+    # node:22 has global fetch, so this needs no curl/wget in the image
+    # (bookworm-slim ships neither).
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+
+  # Scheduler for /api/cron/*. See docker/cron/crontab for the schedule and
+  # docker/cron/Dockerfile for why this is a service rather than crond inside
+  # the app image.
+  #
+  # The schedule lives here so it deploys with the code. It previously lived
+  # in the host crontab, where it was invisible to review and to
+  # production_deploy.sh — which is how every cron route except the funnel
+  # emailer silently never ran. See docs/ita-compliance/KNOWN_ISSUES.md.
+  cron:
+    build:
+      context: .
+      dockerfile: docker/cron/Dockerfile
+    container_name: invoices-cron
+    restart: unless-stopped
+    # CRON_SECRET comes from here and must match the app's.
+    env_file:
+      - .env
+    environment:
+      # Stays on the compose network: no public URL, no TLS, no AUTH_URL
+      # coupling, and the traffic never leaves the host.
+      CRON_BASE_URL: http://app:3000
+      # Without this the container is UTC and every daily job drifts 2-3
+      # hours from what the crontab reads.
+      TZ: ${CRON_TZ:-Asia/Jerusalem}
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  invoices_pgdata:
+  invoices_miniodata:
+  invoices_pgadmin:
+  invoices_redis:

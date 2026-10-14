@@ -1,0 +1,47 @@
+# CLA Assistant Lite: asks every outside contributor to accept CLA.md on
+# their first pull request and records the signature on the
+# `cla-signatures` branch. The check stays red until they sign.
+#
+# Runs on `pull_request_target` so it can comment and set the status on
+# pull requests from forks. It never checks out or runs the pull request's
+# code — only the action itself runs — which is what makes that trigger
+# safe here. Do not add a checkout step to this workflow.
+#
+# Kept in the private yinon11/invoices repository too, so the public tree
+# rebuilt from it carries this file; it runs only in the public repository.
+name: CLA Assistant
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+
+permissions:
+  actions: write
+  contents: write # write signatures to the cla-signatures branch
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla:
+    runs-on: ubuntu-latest
+    if: >-
+      github.repository == 'yinon11/involoops' &&
+      (github.event_name == 'pull_request_target' ||
+      (github.event.issue.pull_request &&
+        (github.event.comment.body == 'recheck' ||
+         github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA')))
+    steps:
+      - name: CLA Assistant
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path-to-document: https://github.com/yinon11/involoops/blob/main/CLA.md
+          path-to-signatures: signatures/version1/cla.json
+          # A branch of its own, so a protected main never blocks a signature.
+          # It must exist before the first pull request.
+          branch: cla-signatures
+          # The maintainer and bots hold or need no licence from themselves.
+          allowlist: yinon11,dependabot[bot],github-actions[bot]

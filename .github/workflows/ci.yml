@@ -1,0 +1,116 @@
+name: CI
+
+# This repository had no automated checks at all: nothing verified a pull
+# request, and nothing ran on merge. Everything below is a command a
+# contributor already runs locally — the workflow just makes sure they are
+# actually run, every time, by something that cannot forget.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  # A new push supersedes the run in flight for the same ref.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Lint, typecheck and build need no services, so they run on their own
+  # and give the fastest possible signal on the common failures.
+  static:
+    name: Lint, typecheck, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Blocking, and on zero. This started as advisory (16 pre-existing
+      # errors would have made the workflow red on arrival), then a budget
+      # ratchet at 5, and the backlog is now empty — so the budget
+      # machinery is gone with it. `eslint` still reports warnings; only
+      # errors fail the build, which is eslint's own default.
+      - name: Lint
+        run: npm run lint
+
+      # Blocking: this is clean across the whole repository as of this
+      # commit, so anything it catches is genuinely new.
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      # No environment is set here on purpose: the build completes with no
+      # database and no secrets, and supplying placeholders would hide the
+      # day that stops being true.
+      - name: Build
+        run: npm run build
+
+  # The verify harnesses. The reconciliation one is the reason this job
+  # exists: it checks a SQL predicate, which is exactly the kind of thing
+  # that keeps composing cleanly while matching the wrong rows.
+  verify:
+    name: Verify harnesses
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: invoices_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/invoices_ci
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply migrations
+        # Also the only place the migration chain is exercised end to end.
+        # A migration that cannot apply to an empty database fails here
+        # rather than in the deploy's boot sequence.
+        run: npx drizzle-kit migrate
+
+      - name: Verify SHAAM submission (mock-only)
+        run: npx tsx scripts/verify-shaam-submission.ts
+
+      - name: Verify SHAAM reconciliation (needs the database)
+        run: npx tsx scripts/verify-shaam-reconcile.ts
+
+      - name: Verify reverse-charge consent (needs the database)
+        run: npx tsx scripts/verify-reverse-charge-consent.ts
+
+      - name: Verify Bank of Israel rate cache (needs the database; BOI stubbed)
+        run: npx tsx scripts/verify-fx-rates.ts
+        env:
+          NODE_OPTIONS: --require ./scripts/stub-server-only.cjs
+
+      - name: Verify PCN874 file (needs the database)
+        run: npx tsx scripts/verify-pcn874.ts
+
+      - name: Verify sandbox mock outcomes (needs the database)
+        run: npx tsx scripts/verify-sandbox-mock.ts
+
+      - name: Verify void and delete rules (needs the database)
+        run: npx tsx scripts/verify-cancellation-rules.ts
+        env:
+          NODE_OPTIONS: --require ./scripts/stub-server-only.cjs
