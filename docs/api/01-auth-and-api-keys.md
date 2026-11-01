@@ -2,7 +2,9 @@
 
 ## Goal
 
-Every public-API call is authenticated by a **bearer API key** that the user creates in the dashboard. Keys are scoped, revocable, rate-limited, and never recoverable in plaintext after creation.
+Every `/api/v1` call is authenticated by a **bearer API key** that the user creates in the dashboard. Keys are scoped, revocable, rate-limited, and never recoverable in plaintext after creation.
+
+`/api/mcp` accepts those same keys. It also accepts an OAuth access token when the authorization server is configured (authorization code + PKCE). That sign-in path, the Claude redirect, and the discovery documents are specified in `10-mcp.md`. Session cookies are not credentials on `/api/mcp`. This document stays the reference for API keys.
 
 ## Key format
 

@@ -16,7 +16,7 @@ An administrator opens **Settings → API keys**, creates a key, and copies it o
 
 - Their own software creating drafts and issuing documents.
 - A webhook receiver that hears when a document is issued or an extraction finishes. Signing and retries are in the developer docs.
-- Claude or another MCP client, using the same key. Setup is the MCP section of the developer docs.
+- Claude or another MCP client. Add `https://involoops.com/api/mcp` and sign in. A custom connector or another client can send an API key instead (`Authorization: Bearer` plus the key). Setup is the MCP section of the developer docs.
 
 ## Related
 
