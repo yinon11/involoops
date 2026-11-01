@@ -14,7 +14,7 @@ This folder is the **design** for the InvoLoops public REST API. No code is writ
 8. **`07-openapi-and-docs-site.md`** — OpenAPI 3.1 generation from Zod, Scalar-rendered docs at `/developers`.
 9. **`08-implementation-plan.md`** — Phased rollout, files to add, migration order, risk register.
 10. **`09-security-checklist.md`** — Pre-launch gates: auth, transport, multi-tenancy, SSRF, logging.
-11. **`10-mcp.md`** — MCP Streamable HTTP endpoint at `/api/mcp` (API-key auth, tool catalog).
+11. **`10-mcp.md`** — MCP Streamable HTTP endpoint at `/api/mcp` (OAuth sign-in or API-key auth, tool catalog).
 
 ## TL;DR for reviewers
 
@@ -31,7 +31,7 @@ This folder is the **design** for the InvoLoops public REST API. No code is writ
 
 ## What this plan deliberately does **not** cover
 
-- OAuth2 third-party authorization (only first-party API keys in v1).
+- OAuth2 for the REST API (only first-party API keys on `/api/v1`). MCP sign-in is specified in `10-mcp.md`.
 - GraphQL or streaming.
 - Server-streamed file downloads (we return signed URLs).
 - An admin API (the `/admin/*` UI is unchanged).

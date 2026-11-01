@@ -2,7 +2,7 @@
 
 > **Status:** Implemented.  
 > **Route:** `GET|POST /api/mcp` (Streamable HTTP)  
-> **Auth:** same bearer API keys as `/api/v1`
+> **Auth:** OAuth sign-in, or the same bearer API keys as `/api/v1`
 
 ## What it is
 
@@ -10,8 +10,23 @@ A [Model Context Protocol](https://modelcontextprotocol.io/) server that exposes
 
 ## Connect a client
 
-1. Create an API key in **Settings → API Keys** with the scopes you need.
-2. Point the client at `https://<host>/api/mcp` with the key in `Authorization`.
+The server URL is `https://involoops.com/api/mcp` (on another host, `https://<host>/api/mcp`).
+
+### Sign in (OAuth)
+
+Claude and other MCP clients that speak OAuth connect by URL and sign in. Do not put an API key in that config.
+
+1. Add `https://involoops.com/api/mcp`.
+2. Sign in with the InvoLoops account when the client opens the browser.
+3. Allow the requested scopes on the consent screen.
+
+Hosted Claude (claude.ai, Claude Desktop, mobile, Cowork) uses the redirect `https://claude.ai/api/mcp/auth_callback`. Claude Code uses an RFC 8252 loopback redirect: `http://localhost[:port]/callback` or `http://127.0.0.1[:port]/callback`.
+
+OAuth is on only when the issuer (`AUTH_URL` or `NEXTAUTH_URL`), `AUTH_SECRET`, `ANTHROPIC_MCP_CLIENT_ID`, and an `ANTHROPIC_MCP_CLIENT_SECRET` of at least 32 characters are set. Until then the route accepts API keys only, and the protected-resource metadata lists no authorization server.
+
+### API key
+
+A custom connector or `mcp.json` can still send `Authorization: Bearer <api key>`. Create the key in **Settings → API Keys** with the scopes the tools need. The header value is the word `Bearer`, one space, and the key (`inv_live_…` or `inv_test_…`), once.
 
 ### Cursor (`mcp.json`)
 

@@ -265,9 +265,10 @@ export default function DevelopersPage() {
         {/* Auth ------------------------------------------------------------ */}
         <Section id="auth" title="Authentication">
           <P>
-            Every call requires{" "}
-            <Code>Authorization: Bearer &lt;api-key&gt;</Code>. Keys carry one
-            of two prefixes:
+            Every REST call requires{" "}
+            <Code>Authorization: Bearer &lt;api-key&gt;</Code>. MCP can use
+            that header or a sign-in; see below. Keys carry one of two
+            prefixes:
           </P>
           <UL>
             <li>
@@ -302,8 +303,27 @@ export default function DevelopersPage() {
             >
               Model Context Protocol
             </a>{" "}
-            endpoint at <Code>/api/mcp</Code>. Use the same bearer API key;
-            tools enforce the same scopes as the REST routes.
+            endpoint at <Code>https://involoops.com/api/mcp</Code>. Two
+            credentials work. Tools enforce the same scopes as the REST routes
+            either way.
+          </P>
+          <P>
+            <Strong>Sign in (OAuth).</Strong> In Claude and other MCP clients,
+            add that URL and sign in with your InvoLoops account when the
+            client asks. You approve the requested scopes on a consent screen.
+            This is the path for Claude on the web, Claude Desktop, and Claude
+            Code. No API key goes in the client config.
+          </P>
+          <P>
+            <Strong>API key.</Strong> A custom connector or{" "}
+            <Code>mcp.json</Code> can still send{" "}
+            <Code>Authorization: Bearer &lt;api-key&gt;</Code>. The value is
+            the word <Code>Bearer</Code>, one space, and the key (
+            <Code>inv_live_…</Code> or <Code>inv_test_…</Code>), once. Create
+            the key under{" "}
+            <DocLink href="/settings/api-keys">Settings → API keys</DocLink>{" "}
+            with the scopes those tools need. A read-only key can connect;
+            each tool still refuses a call whose scope is missing.
           </P>
           <CodeBlock
             language="json"
